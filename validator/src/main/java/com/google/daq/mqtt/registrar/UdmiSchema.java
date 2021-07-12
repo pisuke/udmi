@@ -92,6 +92,8 @@ public class UdmiSchema {
 
   public static class PointsetConfig {
     public String state_etag;
+    public Integer sample_limit_sec;
+    public Integer sample_rate_sec;
     public Map<String, PointConfig> points = new TreeMap<>();
   }
 

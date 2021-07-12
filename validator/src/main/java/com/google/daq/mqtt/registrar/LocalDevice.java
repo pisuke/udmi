@@ -24,6 +24,8 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 import com.google.daq.mqtt.registrar.UdmiSchema.Config;
 import com.google.daq.mqtt.registrar.UdmiSchema.GatewayConfig;
+import com.google.daq.mqtt.registrar.UdmiSchema.SystemConfig;
+import com.google.daq.mqtt.registrar.UdmiSchema.PointsetConfig;
 import com.google.daq.mqtt.util.CloudDeviceSettings;
 import com.google.daq.mqtt.util.CloudIotManager;
 import com.google.daq.mqtt.util.ExceptionMap;
@@ -430,6 +432,8 @@ class LocalDevice {
     if (metadata.localnet != null) {
       config.localnet = getDeviceLocalnetConfig();
     }
+    config.system = new SystemConfig();
+    config.system.min_loglevel = 500;
     return config;
   }
 
@@ -441,6 +445,8 @@ class LocalDevice {
 
   private UdmiSchema.PointsetConfig getDevicePointsetConfig() {
     UdmiSchema.PointsetConfig pointsetConfig = new UdmiSchema.PointsetConfig();
+    pointsetConfig.sample_limit_sec = 20;
+    pointsetConfig.sample_rate_sec = 40;
     metadata.pointset.points.forEach((metadataKey, value) ->
         pointsetConfig.points.computeIfAbsent(metadataKey, configKey ->
             UdmiSchema.PointConfig.fromMetadata(value)));
