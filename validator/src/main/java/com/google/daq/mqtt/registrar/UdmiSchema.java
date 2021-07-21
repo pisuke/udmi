@@ -76,10 +76,10 @@ public class UdmiSchema {
   }
 
   public static class Config extends UdmiBase {
+    public SystemConfig system;
     public GatewayConfig gateway;
     public LocalnetConfig localnet;
     public PointsetConfig pointset;
-    public SystemConfig system;
   }
 
   static class GatewayConfig {
