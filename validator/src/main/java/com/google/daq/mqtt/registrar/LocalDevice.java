@@ -422,6 +422,8 @@ class LocalDevice {
   public UdmiSchema.Config deviceConfigObject() {
     Config config = new Config();
     config.timestamp = metadata.timestamp;
+    config.system = new SystemConfig();
+    config.system.min_loglevel = 500;
     if (isGateway()) {
       config.gateway = new GatewayConfig();
       config.gateway.proxy_ids = getProxyDevicesList();
@@ -432,8 +434,6 @@ class LocalDevice {
     if (metadata.localnet != null) {
       config.localnet = getDeviceLocalnetConfig();
     }
-    config.system = new SystemConfig();
-    config.system.min_loglevel = 500;
     return config;
   }
 
