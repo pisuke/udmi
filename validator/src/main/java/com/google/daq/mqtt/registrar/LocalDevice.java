@@ -6,6 +6,7 @@ import static com.google.daq.mqtt.registrar.Registrar.GENERATED_CONFIG_JSON;
 import static com.google.daq.mqtt.registrar.Registrar.METADATA_JSON;
 import static com.google.daq.mqtt.registrar.Registrar.NORMALIZED_JSON;
 
+import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser.Feature;
@@ -559,7 +560,7 @@ class LocalDevice {
   public void writeConfigFile() {
     File configFile = new File(deviceDir, GENERATED_CONFIG_JSON);
     try (OutputStream outputStream = new FileOutputStream(configFile)) {
-      outputStream.write(getSettings().config.getBytes());
+      outputStream.write(getSettings().config.replace(" : ", ":").replace("{ }", "{}").getBytes());
     } catch (Exception e) {
       e.printStackTrace();
       throw new RuntimeException("While writing "+ configFile.getAbsolutePath(), e);
@@ -621,9 +622,63 @@ class LocalDevice {
   }
 
   private static class ProperPrettyPrinterPolicy extends DefaultPrettyPrinter {
-    @Override
-    public void writeObjectFieldValueSeparator(JsonGenerator jg) throws IOException {
-      jg.writeRaw(": ");
-    }
+      protected transient int _nesting = 0;
+  
+      public ProperPrettyPrinterPolicy() {}
+  
+      public ProperPrettyPrinterPolicy(ProperPrettyPrinterPolicy base)
+      {
+          _arrayIndenter = base._arrayIndenter;
+          _objectIndenter = base._objectIndenter;
+          _nesting = base._nesting;
+      }
+  
+      @Override
+      public ProperPrettyPrinterPolicy createInstance() {
+          return new ProperPrettyPrinterPolicy(this);
+      }
+  
+      @Override
+      public void writeStartObject(JsonGenerator jg) throws IOException, JsonGenerationException
+      {
+          jg.writeRaw('{');
+          if (!_objectIndenter.isInline()) {
+              ++_nesting;
+          }
+      }
+  
+      @Override
+      public void beforeObjectEntries(JsonGenerator jg) throws IOException, JsonGenerationException
+      {
+          _objectIndenter.writeIndentation(jg, _nesting);
+      }
+  
+      @Override
+      public void writeObjectFieldValueSeparator(JsonGenerator jg) throws IOException, JsonGenerationException
+      {
+          jg.writeRaw(':');
+      }
+  
+      @Override
+      public void writeObjectEntrySeparator(JsonGenerator jg) throws IOException, JsonGenerationException
+      {
+          jg.writeRaw(',');
+          _objectIndenter.writeIndentation(jg, _nesting);
+      }
+  
+      @Override
+      public void writeEndObject(JsonGenerator jg, int nrOfEntries) throws IOException, JsonGenerationException
+      {
+          if (!_objectIndenter.isInline()) {
+              --_nesting;
+          }
+          if (nrOfEntries > 0) {
+              _objectIndenter.writeIndentation(jg, _nesting);
+          } else {
+              jg.writeRaw(' ');
+          }
+          jg.writeRaw('}');
+      }
   }
+
 }

@@ -118,10 +118,11 @@ public class CloudIotManager {
 
   private void writeDeviceConfig(String deviceId, String config) {
     try {
+      String message = Base64.getEncoder().encodeToString(config
+        .replace(" : ", ":")
+        .replace("{ }", "{}").getBytes());
       cloudIotRegistries.devices().modifyCloudToDeviceConfig(getDevicePath(deviceId),
-          new ModifyCloudToDeviceConfigRequest().setBinaryData(
-              Base64.getEncoder().encodeToString(config.getBytes()))
-      ).execute();
+      new ModifyCloudToDeviceConfigRequest().setBinaryData(message)).execute();
     } catch (Exception e) {
       throw new RuntimeException("While modifying device config", e);
     }

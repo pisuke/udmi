@@ -280,7 +280,9 @@ public class  Registrar {
       attributes.put("deviceRegistryId", cloudIotManager.getRegistryId());
       attributes.put("projectId", cloudIotManager.getProjectId());
       attributes.put("subFolder", subFolder);
-      String messageString = OBJECT_MAPPER.writeValueAsString(subConfig);
+      String messageString = OBJECT_MAPPER.writeValueAsString(subConfig)
+        .replace(" : ", ":")
+        .replace("{ }", "{}");
       if (pubSubPusher != null) {
         pubSubPusher.sendMessage(attributes, messageString);
       }
