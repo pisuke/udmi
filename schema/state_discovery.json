@@ -7,14 +7,14 @@
   "additionalProperties": false,
   "properties": {
     "generation": {
-      "description": "Generational marker for enumeration",
+      "description": "Generational marker to group results together",
       "type": "string",
       "format": "date-time"
     },
     "families": {
       "description": "Discovery protocol families",
       "additionalProperties": false,
-      "existingJavaType": "java.util.HashMap<String, FamilyDiscoveryState>",
+      "existingJavaType": "java.util.HashMap<udmi.schema.Common.ProtocolFamily, FamilyDiscoveryState>",
       "patternProperties": {
         "^[a-z][a-z0-9]*(_[a-z0-9]+)*$": {
           "$ref": "file:state_discovery_family.json"

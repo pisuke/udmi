@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import udmi.schema.Common.ProtocolFamily;
 
 
 /**
@@ -25,11 +26,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class DiscoveryState {
 
     /**
-     * Generational marker for enumeration
+     * Generational marker to group results together
      * 
      */
     @JsonProperty("generation")
-    @JsonPropertyDescription("Generational marker for enumeration")
+    @JsonPropertyDescription("Generational marker to group results together")
     public Date generation;
     /**
      * Discovery protocol families
@@ -37,7 +38,7 @@ public class DiscoveryState {
      */
     @JsonProperty("families")
     @JsonPropertyDescription("Discovery protocol families")
-    public HashMap<String, FamilyDiscoveryState> families;
+    public HashMap<ProtocolFamily, FamilyDiscoveryState> families;
 
     @Override
     public int hashCode() {

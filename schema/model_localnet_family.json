@@ -3,17 +3,16 @@
   "title": "Family Localnet Model",
   "type": "object",
   "description": "The type of network",
-  "examples": ["bacnet", "modbus"],
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
   "properties": {
     "addr": {
       "type": "string",
-      "description": "The address of a device on the local network",
+      "description": "The address of a device on the fieldbus/local network",
       "examples": ["0x414889"]
+    },
+    "family": {
+      "existingJavaType": "udmi.schema.Common.ProtocolFamily"
     }
-  },
-  "required": [
-    "addr"
-  ]
+  }
 }

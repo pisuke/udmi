@@ -11,6 +11,8 @@ OUT_DIR=$UDMI_ROOT/out
 mkdir -p $OUT_DIR
 echo $(date --utc +%Y%m%d-%H%M%S) $0 $@ >> $OUT_DIR/cmd_history.log
 
+JARFILE=validator/build/libs/validator-1.0-SNAPSHOT-all.jar
+JAVA_CMD="java -cp $JARFILE com.google.daq.mqtt.sequencer.SequenceRunner"
 SEQUENCER_LOG=$OUT_DIR/sequencer.log
 SEQUENCER_OUT=$OUT_DIR/sequencer.out
 SCHEMA_OUT=$OUT_DIR/schema.out
@@ -19,10 +21,15 @@ log_level=INFO
 min_stage=PREVIEW
 export UDMI_VERSION=$udmi_version
 
-# For cross-env sort stability
-export LC_ALL=C
-
 rm -f $SEQUENCER_LOG $SEQUENCER_OUT $SCHEMA_OUT
+
+# Shortcut to run sequencer with a fixed config and cmd-line tests.
+# TODO: Make this a better (more standard) command line format in-line with other tools.
+if [[ $1 == -- ]]; then
+    shift
+    $JAVA_CMD $@
+    exit 0
+fi
 
 while [[ $1 =~ ^- ]]; do
     if [[ $1 == '-a' ]]; then
@@ -59,9 +66,18 @@ fi
 registry_suffix=null
 alt_registry=null
 
-test_names="$@"
 udmi_version=`git describe --always --dirty`
 
+sequences=
+for test_name in "$@"; do
+    sequences+=\"$test_name\",
+done
+if [[ -n $sequences ]]; then
+    sequences=[${sequences%,}]
+else
+    sequences=null
+fi
+    
 cd $UDMI_ROOT
 
 if ! bin/which_venv_pip3; then
@@ -149,6 +165,7 @@ if [[ ! $site_path -ef $SEQUENCER_CONFIG ]]; then
   "udmi_version": "$udmi_version",
   "udmi_root": "$UDMI_ROOT",
   "reflector_endpoint": $endpoint,
+  "sequences": $sequences,
   "key_file": "$site_model/reflector/rsa_private.pkcs8"
 }
 EOF
@@ -158,11 +175,9 @@ cat $SEQUENCER_CONFIG
 
 validator/bin/build
 
-JARFILE=validator/build/libs/validator-1.0-SNAPSHOT-all.jar
-JAVA_CMD="java -cp $JARFILE com.google.daq.mqtt.sequencer.SequenceRunner"
-echo $JAVA_CMD $test_names
+echo $JAVA_CMD
 result=0
-$JAVA_CMD $test_names 2>&1 | tee $SEQUENCER_LOG
+$JAVA_CMD 2>&1 | tee $SEQUENCER_LOG
 
 echo
 echo Extracting sequence results:

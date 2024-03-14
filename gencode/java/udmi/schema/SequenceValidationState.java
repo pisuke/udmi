@@ -41,7 +41,7 @@ public class SequenceValidationState {
      */
     @JsonProperty("stage")
     @JsonPropertyDescription("Stage of a feature implemenation")
-    public udmi.schema.FeatureEnumeration.FeatureStage stage;
+    public udmi.schema.FeatureDiscovery.FeatureStage stage;
     @JsonProperty("capabilities")
     public Map<String, CapabilityValidationState> capabilities;
     /**
@@ -101,6 +101,7 @@ public class SequenceValidationState {
     public enum SequenceResult {
 
         START("start"),
+        ERRR("errr"),
         SKIP("skip"),
         PASS("pass"),
         FAIL("fail");

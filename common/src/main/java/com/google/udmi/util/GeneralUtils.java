@@ -1,5 +1,6 @@
 package com.google.udmi.util;
 
+import static com.google.common.collect.Sets.symmetricDifference;
 import static com.google.udmi.util.JsonUtil.isoConvert;
 import static com.google.udmi.util.ProperPrinter.OutputFormat.COMPRESSED;
 import static com.google.udmi.util.ProperPrinter.OutputFormat.VERBOSE;
@@ -16,6 +17,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import com.google.common.hash.Hashing;
 import com.google.daq.mqtt.util.ValidationException;
 import com.google.udmi.util.ProperPrinter.OutputFormat;
@@ -39,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -125,7 +128,7 @@ public class GeneralUtils {
   }
 
   public static String encodeBase64(String payload) {
-    return encodeBase64(payload.getBytes());
+    return ifNotNullGet(payload, raw -> encodeBase64(raw.getBytes()));
   }
 
   public static String encodeBase64(byte[] payload) {
@@ -194,6 +197,10 @@ public class GeneralUtils {
     }
   }
 
+  public static Date toDate(Instant lastSeen) {
+    return ifNotNullGet(lastSeen, Date::from);
+  }
+
   private static String writeToPrettyString(Object data, OutputFormat indent) {
     try {
       ByteArrayOutputStream outputString = new ByteArrayOutputStream();
@@ -250,6 +257,12 @@ public class GeneralUtils {
     }
   }
 
+  public static <T> void ifNotNullThrow(T value, String message) {
+    if (value != null) {
+      throw new RuntimeException(message);
+    }
+  }
+
   public static <T> void ifNotNullThen(T value, Consumer<T> consumer) {
     ofNullable(value).ifPresent(consumer);
   }
@@ -268,11 +281,18 @@ public class GeneralUtils {
     }
   }
 
-  public static <T> T ifTrueGet(Object conditional, T value) {
+  public static <T> T ifTrueGet(Boolean conditional, T value) {
     return ifTrueGet(conditional, () -> value);
   }
 
-  public static <T> T ifTrueGet(Object conditional, Supplier<T> action) {
+  public static <T> T ifTrueGet(Boolean conditional, Supplier<T> action) {
+    if (isTrue(conditional)) {
+      return action.get();
+    }
+    return null;
+  }
+
+  public static <T> T ifTrueGet(Supplier<Boolean> conditional, Supplier<T> action) {
     if (isTrue(conditional)) {
       return action.get();
     }
@@ -281,6 +301,14 @@ public class GeneralUtils {
 
   public static <T> T ifTrueGet(Object conditional, Supplier<T> action, Supplier<T> alternate) {
     return isTrue(conditional) ? action.get() : alternate.get();
+  }
+
+  public static <T> T ifTrueGet(Object conditional, Supplier<T> action, T alternate) {
+    return isTrue(conditional) ? action.get() : alternate;
+  }
+
+  public static <T> T ifTrueGet(Object conditional, T value, Supplier<T> alternate) {
+    return isTrue(conditional) ? value : alternate.get();
   }
 
   public static <T> void ifTrueThen(Object conditional, Runnable action) {
@@ -295,8 +323,16 @@ public class GeneralUtils {
     }
   }
 
-  public static <T> T ifNotTrueGet(Object conditional, Supplier<T> supplier) {
+  public static <T> T ifNotTrueGet(Boolean conditional, Supplier<T> supplier) {
     return isTrue(conditional) ? null : supplier.get();
+  }
+
+  public static <T> T ifNotTrueGet(Supplier<Boolean> conditional, Supplier<T> supplier) {
+    return isTrue(catchToNull(conditional)) ? null : supplier.get();
+  }
+
+  public static boolean isNotTrue(Boolean value) {
+    return !isTrue(value);
   }
 
   public static boolean isTrue(Object value) {
@@ -353,6 +389,11 @@ public class GeneralUtils {
 
   public static <T> T catchToNull(Supplier<T> provider) {
     return catchToElse(provider, (T) null);
+  }
+
+  public static String joinOrNull(String prefix, Set<Object> setDifference) {
+    return ifTrueGet(setDifference == null || setDifference.isEmpty(), (String) null,
+        () -> prefix + CSV_JOINER.join(setDifference));
   }
 
   public static <U> U mapReplace(U previous, U added) {
@@ -500,10 +541,18 @@ public class GeneralUtils {
   }
 
   public static Date getNow() {
-    return Date.from(Instant.now().plus(clockSkew));
+    return Date.from(instantNow());
+  }
+
+  public static Instant instantNow() {
+    return Instant.now().plus(clockSkew);
   }
 
   public static String getTimestamp() {
     return isoConvert(getNow());
+  }
+
+  public static String prefixedDifference(String prefix, Set<String> a, Set<String> b) {
+    return joinOrNull(prefix, symmetricDifference(a, b));
   }
 }

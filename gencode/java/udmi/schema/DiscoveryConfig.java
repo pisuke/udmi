@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import udmi.schema.Common.ProtocolFamily;
 
 
 /**
@@ -32,15 +33,20 @@ public class DiscoveryConfig {
     @JsonProperty("generation")
     @JsonPropertyDescription("Generational marker for controlling enumeration")
     public Date generation;
+    /**
+     * Indicates which discovery sub-categories to activate
+     * 
+     */
     @JsonProperty("enumerate")
+    @JsonPropertyDescription("Indicates which discovery sub-categories to activate")
     public Enumerate enumerate;
     /**
-     * Address family config for a scan. Not included for device enumeration messages.
+     * Address family config for a scan.
      * 
      */
     @JsonProperty("families")
-    @JsonPropertyDescription("Address family config for a scan. Not included for device enumeration messages.")
-    public HashMap<String, FamilyDiscoveryConfig> families;
+    @JsonPropertyDescription("Address family config for a scan.")
+    public HashMap<ProtocolFamily, FamilyDiscoveryConfig> families;
 
     @Override
     public int hashCode() {

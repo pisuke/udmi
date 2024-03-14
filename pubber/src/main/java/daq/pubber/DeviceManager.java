@@ -2,10 +2,12 @@ package daq.pubber;
 
 import com.google.udmi.util.SiteModel;
 import java.util.Map;
+import udmi.schema.Common.ProtocolFamily;
 import udmi.schema.Config;
 import udmi.schema.DevicePersistent;
 import udmi.schema.Entry;
-import udmi.schema.FamilyDiscoveryEvent;
+import udmi.schema.FamilyDiscovery;
+import udmi.schema.FamilyLocalnetModel;
 import udmi.schema.Level;
 import udmi.schema.Metadata;
 import udmi.schema.Operation.SystemMode;
@@ -45,7 +47,7 @@ public class DeviceManager extends ManagerBase {
   public void setMetadata(Metadata metadata) {
     pointsetManager.setPointsetModel(metadata.pointset);
     systemManager.setMetadata(metadata);
-    gatewayManager.setMetadata(metadata.gateway);
+    gatewayManager.setMetadata(metadata);
   }
 
   public void activate() {
@@ -119,7 +121,7 @@ public class DeviceManager extends ManagerBase {
     systemManager.stop();
   }
 
-  public Map<String, FamilyDiscoveryEvent> enumerateFamilies() {
+  public Map<ProtocolFamily, FamilyDiscovery> enumerateFamilies() {
     return localnetManager.enumerateFamilies();
   }
 

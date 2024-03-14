@@ -34,7 +34,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -75,7 +74,6 @@ public abstract class MessageBase extends ContainerBase implements MessagePipe {
   private final ExecutorService executor = Executors.newFixedThreadPool(EXECUTION_THREADS);
   private final Entry<AtomicInteger, AtomicDouble> publishStats = makeEmptyStats();
   private final Entry<AtomicInteger, AtomicDouble> receiveStats = makeEmptyStats();
-  private final String pipeId;
   private final AtomicBoolean subscriptionsThrottled = new AtomicBoolean();
   private BlockingQueue<QueueEntry> sourceQueue;
   private Consumer<Bundle> dispatcher;
@@ -85,7 +83,6 @@ public abstract class MessageBase extends ContainerBase implements MessagePipe {
    * Default message base with basic default parameters.
    */
   public MessageBase() {
-    pipeId = getClass().getSimpleName();
     queueCapacity = DEFAULT_CAPACITY;
     publishDelaySec = 0;
   }
@@ -94,8 +91,7 @@ public abstract class MessageBase extends ContainerBase implements MessagePipe {
    * Create a configuration based instance.
    */
   public MessageBase(EndpointConfiguration configuration) {
-    pipeId = Optional.ofNullable(configuration.error).map(flow -> "flow:" + flow)
-        .orElse(getClass().getSimpleName());
+    super(configuration);
     queueCapacity = ofNullable(configuration.capacity).orElse(DEFAULT_CAPACITY);
     publishDelaySec = ofNullable(configuration.publish_delay_sec).orElse(0);
     if (publishDelaySec > 0) {
@@ -225,7 +221,7 @@ public abstract class MessageBase extends ContainerBase implements MessagePipe {
 
   private synchronized void ensureSourceQueue() {
     if (sourceQueue == null) {
-      notice(format("Creating new source queue %s with capacity %s", pipeId, queueCapacity));
+      notice(format("Creating new source queue %s with capacity %s", containerId, queueCapacity));
       sourceQueue = new LinkedBlockingQueue<>(queueCapacity);
     }
   }
@@ -289,20 +285,20 @@ public abstract class MessageBase extends ContainerBase implements MessagePipe {
           }
           final Instant start = Instant.now();
           long waiting = Duration.between(before, start).getSeconds();
-          debug("Processing waited %ds on message loop %s", waiting, id);
+          trace("Processing waited %ds on message loop %s", waiting, id);
           if (TERMINATE_MARKER.equals(bundle.message)) {
             info("Terminating message loop %s", id);
             return;
           }
           envelope = bundle.envelope;
-          debug("Processing %s %s/%s %s", this, envelope.subType, envelope.subFolder,
+          trace("Processing %s %s/%s %s", this, envelope.subType, envelope.subFolder,
               envelope.transactionId);
           if (ERROR_MESSAGE_MARKER.equals(envelope.transactionId)) {
             throw new RuntimeException("Exception due to test-induced error");
           }
           dispatcher.accept(bundle);
           long seconds = Duration.between(start, Instant.now()).getSeconds();
-          debug("Processing took %ds for message loop %s", seconds, id);
+          trace("Processing took %ds for message loop %s", seconds, id);
         } catch (Exception e) {
           warn("Handling dispatch exception: " + friendlyStackTrace(e));
           handleDispatchException(envelope, e);
@@ -317,7 +313,7 @@ public abstract class MessageBase extends ContainerBase implements MessagePipe {
   private String messageQueueMessage() {
     double receiveQueue = getReceiveQueueSize();
     double publishQueue = getPublishQueueSize();
-    return format("Message queue %s at %.03f/%.03f", pipeId, receiveQueue, publishQueue);
+    return format("Message queue %s at %.03f/%.03f", containerId, receiveQueue, publishQueue);
   }
 
   private void receiveBundle(Bundle bundle) {
@@ -361,7 +357,7 @@ public abstract class MessageBase extends ContainerBase implements MessagePipe {
 
     try {
       Bundle bundle = new Bundle(envelope, messageObject);
-      debug("Received %s/%s -> %s %s", bundle.envelope.subType, bundle.envelope.subFolder,
+      trace("Received %s/%s -> %s %s", bundle.envelope.subType, bundle.envelope.subFolder,
           queueIdentifier(), bundle.envelope.transactionId);
       receiveBundle(bundle);
     } catch (Exception e) {
@@ -406,7 +402,7 @@ public abstract class MessageBase extends ContainerBase implements MessagePipe {
 
   @Override
   public void activate(Consumer<Bundle> bundleConsumer) {
-    debug("Activating message pipe %s as %s => %s", pipeId, queueIdentifier(),
+    debug("Activating message pipe %s as %s => %s", containerId, queueIdentifier(),
         Objects.hash(dispatcher));
     dispatcher = bundleConsumer;
     ensureSourceQueue();
@@ -492,7 +488,7 @@ public abstract class MessageBase extends ContainerBase implements MessagePipe {
 
   @Override
   public String toString() {
-    return pipeId;
+    return containerId;
   }
 
   /**
