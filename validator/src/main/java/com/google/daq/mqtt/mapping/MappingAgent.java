@@ -1,8 +1,10 @@
 package com.google.daq.mqtt.mapping;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.daq.mqtt.util.ConfigUtil.UDMI_VERSION;
 import static com.google.udmi.util.Common.removeNextArg;
+import static com.google.udmi.util.GeneralUtils.catchToNull;
 import static com.google.udmi.util.JsonUtil.isoConvert;
 import static com.google.udmi.util.JsonUtil.loadFileStrict;
 import static com.google.udmi.util.JsonUtil.loadFileStrictRequired;
@@ -20,7 +22,6 @@ import com.google.daq.mqtt.util.CloudIotManager;
 import com.google.daq.mqtt.util.ConfigUtil;
 import com.google.udmi.util.JsonUtil;
 import com.google.udmi.util.SiteModel;
-import daq.pubber.ProtocolFamily;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import udmi.schema.CloudModel;
+import udmi.schema.Depths.Depth;
 import udmi.schema.DiscoveryConfig;
 import udmi.schema.DiscoveryEvents;
 import udmi.schema.Envelope.SubFolder;
@@ -103,9 +105,16 @@ public class MappingAgent {
   }
 
   private void initiateDiscover() {
+    Set<String> families = catchToNull(
+        () -> siteModel.getMetadata(deviceId).discovery.families.keySet());
+    checkNotNull(families, "No discovery families defined");
+    families.forEach(this::initiateDiscover);
+  }
+
+  private void initiateDiscover(String family) {
     String generation = isoConvert(new Date());
-    System.err.printf("Initiating discovery on %s/%s at %s%n", siteModel.getRegistryId(), deviceId,
-        generation);
+    System.err.printf("Initiating %s discovery on %s/%s at %s%n", family,
+        siteModel.getRegistryId(), deviceId, generation);
 
     CloudModel cloudModel = new CloudModel();
     cloudModel.metadata = ImmutableMap.of(UDMI_PROVISION_GENERATION, generation);
@@ -113,9 +122,10 @@ public class MappingAgent {
 
     FamilyDiscoveryConfig familyDiscoveryConfig = new FamilyDiscoveryConfig();
     familyDiscoveryConfig.generation = JsonUtil.getDate(generation);
+    familyDiscoveryConfig.depth = Depth.DETAILS;
     DiscoveryConfig discoveryConfig = new DiscoveryConfig();
     discoveryConfig.families = new HashMap<>();
-    discoveryConfig.families.put(ProtocolFamily.VENDOR, familyDiscoveryConfig);
+    discoveryConfig.families.put(family, familyDiscoveryConfig);
     cloudIotManager.modifyConfig(deviceId, SubFolder.DISCOVERY, stringify(discoveryConfig));
   }
 
